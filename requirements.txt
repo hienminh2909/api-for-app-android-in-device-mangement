@@ -11,3 +11,4 @@ pandas
 openpyxl
 pillow
 python-dotenv
+firebase-admin==6.5.0

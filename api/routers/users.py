@@ -97,8 +97,6 @@ async def change_password(req: PasswordChange, user: dict = Depends(get_current_
 
 @router.get("")
 async def get_users(user: dict = Depends(get_current_user)):
-    if user.get("role") != "admin":
-        raise HTTPException(status_code=403, detail="Chỉ admin mới có quyền thao tác")
     res = supabase.table("users").select("id, full_name, username, password_hash, role, room_id, phone, email, handheld_name, created_at, rooms(room_name)").execute()
     
     # Flatten rooms(room_name) and filter deleted users

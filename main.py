@@ -5,6 +5,17 @@ from api.routers import auth, devices, inventory, rooms, categories, users, repo
 
 app = FastAPI(title="Quản lý Thiết bị API", version="1.0.0")
 
+# Khởi tạo Firebase Admin
+try:
+    import firebase_admin
+    from firebase_admin import credentials
+    if not firebase_admin._apps:
+        cred = credentials.Certificate("firebase-service-account.json")
+        firebase_admin.initialize_app(cred)
+        print(">>> Firebase Admin SDK Initialized Successfully")
+except Exception as e:
+    print(f">>> ERROR initializing Firebase: {e}")
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

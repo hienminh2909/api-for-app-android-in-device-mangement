@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends
 from core.config import supabase
 from services.auth_service import get_current_user
 from datetime import datetime, timedelta
+import re
 
 router = APIRouter()
 
@@ -10,7 +11,7 @@ async def get_recent_activity(user: dict = Depends(get_current_user)):
     # 1. Lấy 5 lượt quét kiểm kê gần đây
     inventory_logs = supabase.table("inventory_logs").select("*, devices(device_name), users!inventory_logs_resolved_by_fkey(full_name)").order("inventory_at", desc=True).limit(5).execute()
     
-    # 2. Lấy 5 báo hỏng gần đây (từ bảng requests)
+    # 2. Lấy 5 báo cáo trạng thái gần đây (từ bảng requests)
     report_logs = supabase.table("requests").select("*, devices(device_name), users!requests_created_by_fkey(full_name)").eq("request_type", "REPORT").order("created_at", desc=True).limit(5).execute()
     
     # 3. Lấy 5 thiết bị mới thêm gần đây
@@ -30,7 +31,7 @@ async def get_recent_activity(user: dict = Depends(get_current_user)):
     for log in report_logs.data:
         activities.append({
             "type": "report",
-            "title": "Báo hỏng mới",
+            "title": "Báo cáo trạng thái",
             "content": f"Thiết bị: {log.get('devices', {}).get('device_name', 'N/A')} - Vấn đề: {log.get('description', 'Chưa có mô tả')}",
             "time": log["created_at"],
             "user": log.get("users", {}).get("full_name", "N/A") if log.get("users") else "N/A"
@@ -65,6 +66,16 @@ async def get_dashboard_stats(user: dict = Depends(get_current_user)):
         good_devices = supabase.table("devices").select("id", count="exact").ilike("status", "%Tốt%").execute().count
         need_maintenance_devices = supabase.table("devices").select("id", count="exact").ilike("status", "%Cần bảo trì%").execute().count
         maintenance_devices = supabase.table("devices").select("id", count="exact").ilike("status", "%Đang bảo trì%").execute().count
+        
+        # Calculate total asset value
+        devices_data = supabase.table("devices").select("device_price").execute().data
+        total_asset_value = 0
+        for d in devices_data:
+            price_str = d.get("device_price")
+            if price_str:
+                clean_price = re.sub(r'[^\d]', '', price_str)
+                if clean_price:
+                    total_asset_value += int(clean_price)
     else:
         # Logic cho Giáo viên: Chỉ lấy dữ liệu trong phòng được phân công
         if not room_id:
@@ -84,6 +95,16 @@ async def get_dashboard_stats(user: dict = Depends(get_current_user)):
         need_maintenance_devices = supabase.table("devices").select("id", count="exact").eq("room_id", room_id).ilike("status", "%Cần bảo trì%").execute().count
         maintenance_devices = supabase.table("devices").select("id", count="exact").eq("room_id", room_id).ilike("status", "%Đang bảo trì%").execute().count
 
+        # Calculate total asset value for teacher's room
+        devices_data = supabase.table("devices").select("device_price").eq("room_id", room_id).execute().data
+        total_asset_value = 0
+        for d in devices_data:
+            price_str = d.get("device_price")
+            if price_str:
+                clean_price = re.sub(r'[^\d]', '', price_str)
+                if clean_price:
+                    total_asset_value += int(clean_price)
+
     return {
         "total_devices": total_devices or 0,
         "total_rooms": total_rooms or 0,
@@ -91,5 +112,6 @@ async def get_dashboard_stats(user: dict = Depends(get_current_user)):
         "broken_devices": broken_devices or 0,
         "good_devices": good_devices or 0,
         "need_maintenance_devices": need_maintenance_devices or 0,
-        "maintenance_devices": maintenance_devices or 0
+        "maintenance_devices": maintenance_devices or 0,
+        "total_asset_value": total_asset_value or 0
     }

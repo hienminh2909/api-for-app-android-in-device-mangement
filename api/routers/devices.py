@@ -231,28 +231,8 @@ async def register_device(
             suffix = i + 1
             dev_code = f"{room_name_clean.replace(' ', '')}-{category_code}-{base_ts}-{suffix}"
             
-            qr = qrcode.make(dev_code)
-            qr_byte_arr = io.BytesIO()
-            qr.save(qr_byte_arr, format='PNG')
-            qr_path = f"qr_{dev_code}.png"
-            
-            supabase.storage.from_("qrcodes").upload(
-                path=qr_path,
-                file=qr_byte_arr.getvalue(),
-                file_options={"content-type": "image/png"}
-            )
-            qr_url = get_safe_url("qrcodes", qr_path)
-            
-            bar_byte_arr = io.BytesIO()
-            Code128(dev_code, writer=ImageWriter()).write(bar_byte_arr)
-            bar_path = f"bar_{dev_code}.png"
-            
-            supabase.storage.from_("qrcodes").upload(
-                path=bar_path,
-                file=bar_byte_arr.getvalue(),
-                file_options={"content-type": "image/png"}
-            )
-            bar_url = get_safe_url("qrcodes", bar_path)
+            qr_url = f"/api/web/devices/qr/{dev_code}"
+            bar_url = f"/api/web/devices/barcode/{dev_code}"
             
             devices_to_insert.append({
                 "device_name": device_name,
@@ -279,6 +259,7 @@ async def register_device(
             "message": f"Đã đăng ký thành công {len(res.data)} thiết bị",
             "count": len(res.data),
             "ids": [d['id'] for d in res.data],
+            "device_codes": [d.get('device_code') for d in res.data],
             "qr_urls": [d.get('qr_url') for d in res.data],
             "image_url": image_url
         }
@@ -431,18 +412,8 @@ async def import_and_register(file: UploadFile = File(...), user: dict = Depends
             for i in range(qty):
                 dev_code = f"{r_name.replace(' ', '')}-{c_code}-{base_ts}-{index}-{i+1}"
                 
-                # ... (QR and Barcode logic stays same) ...
-                qr_buf = io.BytesIO()
-                qrcode.make(dev_code).save(qr_buf, format='PNG')
-                qr_path = f"qr_{dev_code}.png"
-                supabase.storage.from_("qrcodes").upload(qr_path, qr_buf.getvalue(), {"content-type": "image/png"})
-                qr_url = get_safe_url("qrcodes", qr_path)
-
-                bar_buf = io.BytesIO()
-                Code128(dev_code, writer=ImageWriter()).write(bar_buf)
-                bar_path = f"bar_{dev_code}.png"
-                supabase.storage.from_("qrcodes").upload(bar_path, bar_buf.getvalue(), {"content-type": "image/png"})
-                bar_url = get_safe_url("qrcodes", bar_path)
+                qr_url = f"/api/web/devices/qr/{dev_code}"
+                bar_url = f"/api/web/devices/barcode/{dev_code}"
 
                 devices_to_insert.append({
                     "device_name": d_name, "device_code": dev_code,
@@ -460,6 +431,7 @@ async def import_and_register(file: UploadFile = File(...), user: dict = Depends
             "status": "success",
             "ids": [d['id'] for d in res.data],
             "count": len(res.data),
+            "device_codes": [d.get('device_code') for d in res.data],
             "qr_urls": [d.get('qr_url') for d in res.data]
         }
 
