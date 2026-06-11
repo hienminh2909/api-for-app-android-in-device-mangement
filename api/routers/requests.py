@@ -11,7 +11,7 @@ router = APIRouter()
 async def create_request(req: RequestCreate, user: dict = Depends(get_current_user)):
     try:
         # TÌM ID THIẾT BỊ TỪ DEVICE_CODE
-        dev_res = supabase.table("devices").select("id, device_name, device_code").eq("device_code", req.device_code).execute()
+        dev_res = supabase.table("devices").select("id, device_name, device_code, rooms(room_name)").eq("device_code", req.device_code).execute()
         if not dev_res.data:
             raise HTTPException(status_code=404, detail=f"Không tìm thấy thiết bị có mã: {req.device_code}")
         
@@ -49,11 +49,21 @@ async def create_request(req: RequestCreate, user: dict = Depends(get_current_us
                             device_info = dev_res.data[0]
                             d_name = device_info.get("device_name", "N/A")
                             d_code = device_info.get("device_code", "N/A")
-                            
+                            r_name = "Phòng không xác định"
+                            if device_info.get("rooms"):
+                                r_name = device_info["rooms"].get("room_name", "Phòng không xác định")
+
+                            role_str = "Giáo viên" if str(user.get("role")) == "teacher" else "Admin"
+                            req_type_vi = ""
+                            if req.request_type == "REPORT": req_type_vi = "báo cáo trạng thái"
+                            elif req.request_type == "UPDATE": req_type_vi = "sửa thông tin"
+                            elif req.request_type == "DELETE": req_type_vi = "xóa"
+                            else: req_type_vi = "xử lý"
+
                             create_notification(
                                 user_id=admin["id"],
                                 title="Yêu cầu mới cần phê duyệt",
-                                content=f"Người dùng {user.get('full_name')} vừa gửi yêu cầu {req.request_type} cho thiết bị: {d_name} ({d_code})",
+                                content=f"{role_str} {user.get('full_name')} yêu cầu {req_type_vi} thiết bị {d_name} ({d_code}) tại {r_name}",
                                 link=notif_link
                             )
                 except Exception as e_notif:

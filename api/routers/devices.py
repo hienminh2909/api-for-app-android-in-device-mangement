@@ -541,12 +541,18 @@ async def update_device(device_id: int, req: DeviceUpdate, user: dict = Depends(
             supabase.table("requests").insert(request_data).execute()
             
             # Lấy thông tin thiết bị để gửi thông báo chi tiết
-            dev_info_res = supabase.table("devices").select("device_name, device_code").eq("id", device_id).execute()
+            dev_info_res = supabase.table("devices").select("device_name, device_code, rooms(room_name)").eq("id", device_id).execute()
             d_name = "N/A"
             d_code = "N/A"
+            r_name = "Phòng không xác định"
             if dev_info_res.data:
-                d_name = dev_info_res.data[0].get("device_name", "N/A")
-                d_code = dev_info_res.data[0].get("device_code", "N/A")
+                d_info = dev_info_res.data[0]
+                d_name = d_info.get("device_name", "N/A")
+                d_code = d_info.get("device_code", "N/A")
+                if d_info.get("rooms"):
+                    r_name = d_info["rooms"].get("room_name", "Phòng không xác định")
+
+            role_str = "Giáo viên" if str(user.get("role")) == "teacher" else "Admin"
 
             # THÔNG BÁO CHO ADMIN
             try:
@@ -555,7 +561,7 @@ async def update_device(device_id: int, req: DeviceUpdate, user: dict = Depends(
                     create_notification(
                         user_id=admin["id"],
                         title="Yêu cầu sửa thiết bị",
-                        content=f"Người dùng {user.get('full_name')} vừa gửi yêu cầu CHỈNH SỬA cho thiết bị: {d_name} ({d_code})",
+                        content=f"{role_str} {user.get('full_name')} yêu cầu sửa thông tin thiết bị {d_name} ({d_code}) tại {r_name}",
                         link="/requests?tab=advanced"
                     )
             except: pass
@@ -592,12 +598,18 @@ async def delete_device(device_id: int, user: dict = Depends(get_current_user)):
             supabase.table("requests").insert(request_data).execute()
             
             # Lấy thông tin thiết bị để gửi thông báo chi tiết
-            dev_info_res = supabase.table("devices").select("device_name, device_code").eq("id", device_id).execute()
+            dev_info_res = supabase.table("devices").select("device_name, device_code, rooms(room_name)").eq("id", device_id).execute()
             d_name = "N/A"
             d_code = "N/A"
+            r_name = "Phòng không xác định"
             if dev_info_res.data:
-                d_name = dev_info_res.data[0].get("device_name", "N/A")
-                d_code = dev_info_res.data[0].get("device_code", "N/A")
+                d_info = dev_info_res.data[0]
+                d_name = d_info.get("device_name", "N/A")
+                d_code = d_info.get("device_code", "N/A")
+                if d_info.get("rooms"):
+                    r_name = d_info["rooms"].get("room_name", "Phòng không xác định")
+
+            role_str = "Giáo viên" if str(user.get("role")) == "teacher" else "Admin"
 
             # THÔNG BÁO CHO ADMIN
             try:
@@ -606,7 +618,7 @@ async def delete_device(device_id: int, user: dict = Depends(get_current_user)):
                     create_notification(
                         user_id=admin["id"],
                         title="Yêu cầu xóa thiết bị",
-                        content=f"Người dùng {user.get('full_name')} vừa gửi yêu cầu XÓA thiết bị: {d_name} ({d_code})",
+                        content=f"{role_str} {user.get('full_name')} yêu cầu xóa thiết bị {d_name} ({d_code}) tại {r_name}",
                         link="/requests?tab=advanced"
                     )
             except: pass
