@@ -104,7 +104,7 @@ async def send_admin_notification(req: AdminNotificationRequest, user: dict = De
         # Send to all users except deleted ones
         users_res = supabase.table("users").select("id, username").execute()
         for u in users_res.data:
-            if "_deleted_" not in u.get("username", ""):
+            if "_deleted_" not in u.get("username", "") and u["id"] != created_by:
                 create_notification(u["id"], req.title, req.content, req.link, created_by)
     else:
         # Send to specific users
