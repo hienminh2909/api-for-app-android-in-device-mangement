@@ -73,9 +73,14 @@ async def get_dashboard_stats(user: dict = Depends(get_current_user)):
         for d in devices_data:
             price_str = d.get("device_price")
             if price_str:
-                clean_price = re.sub(r'[^\d]', '', price_str)
-                if clean_price:
-                    total_asset_value += int(clean_price)
+                price_str = str(price_str).lower().replace("đ", "").replace("vnd", "").strip()
+                try:
+                    val = float(price_str)
+                    total_asset_value += int(val)
+                except ValueError:
+                    clean_price = re.sub(r'[^\d]', '', price_str)
+                    if clean_price:
+                        total_asset_value += int(clean_price)
     else:
         # Logic cho Giáo viên: Chỉ lấy dữ liệu trong phòng được phân công
         if not room_id:
@@ -101,9 +106,14 @@ async def get_dashboard_stats(user: dict = Depends(get_current_user)):
         for d in devices_data:
             price_str = d.get("device_price")
             if price_str:
-                clean_price = re.sub(r'[^\d]', '', price_str)
-                if clean_price:
-                    total_asset_value += int(clean_price)
+                price_str = str(price_str).lower().replace("đ", "").replace("vnd", "").strip()
+                try:
+                    val = float(price_str)
+                    total_asset_value += int(val)
+                except ValueError:
+                    clean_price = re.sub(r'[^\d]', '', price_str)
+                    if clean_price:
+                        total_asset_value += int(clean_price)
 
     return {
         "total_devices": total_devices or 0,
