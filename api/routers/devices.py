@@ -562,7 +562,8 @@ async def update_device(device_id: int, req: DeviceUpdate, user: dict = Depends(
                         user_id=admin["id"],
                         title="Yêu cầu sửa thiết bị",
                         content=f"{role_str} {user.get('full_name')} yêu cầu sửa thông tin thiết bị {d_name} ({d_code}) tại {r_name}",
-                        link="/requests?tab=advanced"
+                        link="/requests?tab=advanced",
+                        created_by=user.get("user_id")
                     )
             except: pass
 
@@ -619,7 +620,8 @@ async def delete_device(device_id: int, user: dict = Depends(get_current_user)):
                         user_id=admin["id"],
                         title="Yêu cầu xóa thiết bị",
                         content=f"{role_str} {user.get('full_name')} yêu cầu xóa thiết bị {d_name} ({d_code}) tại {r_name}",
-                        link="/requests?tab=advanced"
+                        link="/requests?tab=advanced",
+                        created_by=user.get("user_id")
                     )
             except: pass
 

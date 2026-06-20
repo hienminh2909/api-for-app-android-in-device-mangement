@@ -72,7 +72,8 @@ async def update_my_profile(req: UserUpdate, user: dict = Depends(get_current_us
                         user_id=admin["id"],
                         title="Yêu cầu duyệt thông tin",
                         content=f"Người dùng {user.get('full_name')} (@{user.get('username')}) yêu cầu đổi thông tin cá nhân.",
-                        link="/requests"
+                        link="/requests",
+                        created_by=user.get("user_id")
                     )
             except Exception as e_notif:
                 print(f"Lỗi gửi thông báo: {e_notif}")
