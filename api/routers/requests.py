@@ -208,3 +208,29 @@ async def resolve_request(request_id: int, status: str, user: dict = Depends(get
 
     res = supabase.table("requests").update(update_resolve_data).eq("id", request_id).execute()
     return res.data[0] if res.data else None
+
+@router.delete("/{request_id}")
+async def delete_request(request_id: int, user: dict = Depends(get_current_user)):
+    user_role = str(user.get("role", "")).lower()
+    
+    # Lấy thông tin yêu cầu để kiểm tra
+    req = supabase.table("requests").select("created_by, status_resolve").eq("id", request_id).execute()
+    if not req.data:
+        raise HTTPException(status_code=404, detail="Không tìm thấy yêu cầu")
+        
+    req_data = req.data[0]
+    
+    # Chỉ Admin hoặc Người tạo yêu cầu mới được xóa
+    if user_role != "admin" and req_data["created_by"] != user.get("user_id"):
+        raise HTTPException(status_code=403, detail="Không có quyền xóa yêu cầu này")
+        
+    # Chỉ cho phép xóa khi đã duyệt hoặc từ chối
+    status = req_data.get("status_resolve")
+    if status == "pending" or not status:
+        raise HTTPException(status_code=400, detail="Không thể xóa yêu cầu đang chờ xử lý")
+        
+    try:
+        supabase.table("requests").delete().eq("id", request_id).execute()
+        return {"message": "Đã xóa yêu cầu thành công"}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
