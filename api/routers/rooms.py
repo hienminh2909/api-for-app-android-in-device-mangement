@@ -79,6 +79,11 @@ async def delete_room(room_id: int, user: dict = Depends(get_current_user)):
         if check_devices.data:
             raise HTTPException(status_code=400, detail="Không thể xóa phòng đang có thiết bị. Vui lòng di chuyển thiết bị trước.")
             
+        # Kiểm tra xem có giáo viên nào trong phòng không
+        check_users = supabase.table("users").select("id").eq("room_id", room_id).limit(1).execute()
+        if check_users.data:
+            raise HTTPException(status_code=400, detail="Không thể xóa phòng đang có người quản lý. Vui lòng đổi phòng cho người dùng trước.")
+            
         res = supabase.table("rooms").delete().eq("id", room_id).execute()
         return {"message": "Đã xóa phòng thành công"}
     except HTTPException:

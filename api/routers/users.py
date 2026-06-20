@@ -198,7 +198,8 @@ async def delete_user(user_id: str, user: dict = Depends(get_current_user)):
             "username": new_username,
             "full_name": new_full_name,
             "password_hash": random_password,
-            "updated_at": (datetime.utcnow() + timedelta(hours=7)).isoformat()
+            "updated_at": (datetime.utcnow() + timedelta(hours=7)).isoformat(),
+            "room_id": None
         }
         
         res = supabase.table("users").update(update_data).eq("id", user_id).execute()
