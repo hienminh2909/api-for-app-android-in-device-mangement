@@ -64,7 +64,8 @@ async def create_request(req: RequestCreate, user: dict = Depends(get_current_us
                                 user_id=admin["id"],
                                 title="Yêu cầu mới cần phê duyệt",
                                 content=f"{role_str} {user.get('full_name')} yêu cầu {req_type_vi} thiết bị {d_name} ({d_code}) tại {r_name}",
-                                link=notif_link
+                                link=notif_link,
+                                created_by=user.get("user_id")
                             )
                 except Exception as e_notif:
                     print(f"DEBUG: Notification failed but request saved: {str(e_notif)}")
@@ -82,14 +83,14 @@ async def get_pending_requests(user: dict = Depends(get_current_user)):
     
     # Lấy các yêu cầu chờ: status_resolve = 'pending' HOẶC NULL
     res = supabase.table("requests")\
-        .select("*, devices(device_name, device_code, rooms(room_name)), users!requests_created_by_fkey(full_name)")\
+        .select("*, devices(device_name, device_code, status, device_price, description, rooms(room_name)), users!requests_created_by_fkey(full_name)")\
         .or_("status_resolve.eq.pending,status_resolve.is.null")\
         .order("created_at", desc=True).execute()
     return res.data
 
 @router.get("/my-history")
 async def get_my_requests(user: dict = Depends(get_current_user)):
-    res = supabase.table("requests").select("*, devices(device_name, device_code), users!requests_created_by_fkey(full_name)")\
+    res = supabase.table("requests").select("*, devices(device_name, device_code, status, device_price, description, rooms(room_name)), users!requests_created_by_fkey(full_name)")\
         .eq("created_by", user.get("user_id")).order("created_at", desc=True).execute()
     return res.data
 
@@ -99,7 +100,7 @@ async def get_all_requests(user: dict = Depends(get_current_user)):
     if user_role != "admin":
         raise HTTPException(status_code=403, detail="Chỉ Admin mới có quyền xem toàn bộ yêu cầu")
     
-    res = supabase.table("requests").select("*, devices(device_name, device_code, rooms(room_name)), users!requests_created_by_fkey(full_name)")\
+    res = supabase.table("requests").select("*, devices(device_name, device_code, status, device_price, description, rooms(room_name)), users!requests_created_by_fkey(full_name)")\
         .order("created_at", desc=True).execute()
     return res.data
 
@@ -201,7 +202,8 @@ async def resolve_request(request_id: int, status: str, user: dict = Depends(get
             user_id=sender_id,
             title=f"Yêu cầu của bạn đã được {status_label}",
             content=content_msg,
-            link="/requests"
+            link="/requests",
+            created_by=user.get("user_id")
         )
 
     res = supabase.table("requests").update(update_resolve_data).eq("id", request_id).execute()
