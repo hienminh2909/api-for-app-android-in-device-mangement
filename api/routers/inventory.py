@@ -93,6 +93,7 @@ async def get_inventory_details(
                 "id": d["id"],
                 "device_name": d["device_name"],
                 "device_code": d.get("device_code", "N/A"),
+                "image_url": d.get("image_url"),
                 "status": d["status"],
                 "is_checked": is_checked,
                 "last_check": last_check
